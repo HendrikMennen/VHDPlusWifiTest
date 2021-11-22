@@ -1,0 +1,33 @@
+
+# auto-generated
+[Libraries]
+work.files = [
+	'Generated/BinaryToBcd.vhd',
+	'Generated/BinaryToBcdDigit.vhd',
+	'Generated/LED_Matrix_Text.vhd',
+	'Generated/MAX7219_Interface.vhd',
+	'Generated/SPI_Master.vhd',
+	'Generated/Single_Port_RAM.vhd',
+	'Generated/Single_Port_ROM.vhd',
+	'Generated/String_Type_Package.vhd',
+	'Generated/UART_Interface.vhd',
+	'Generated/UART_String.vhd',
+	'Generated/WiFi_Test.vhd'
+]
+[libraries.work]
+files = [
+	'Generated/BinaryToBcd.vhd',
+	'Generated/BinaryToBcdDigit.vhd',
+	'Generated/LED_Matrix_Text.vhd',
+	'Generated/MAX7219_Interface.vhd',
+	'Generated/SPI_Master.vhd',
+	'Generated/Single_Port_RAM.vhd',
+	'Generated/Single_Port_ROM.vhd',
+	'Generated/String_Type_Package.vhd',
+	'Generated/UART_Interface.vhd',
+	'Generated/UART_String.vhd',
+	'Generated/WiFi_Test.vhd'
+]
+# auto-generated-end[Libraries]
+work.files = [
+]

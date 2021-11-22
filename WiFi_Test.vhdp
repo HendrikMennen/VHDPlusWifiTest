@@ -1,0 +1,189 @@
+Main
+(
+
+    BTN     : IN  STD_LOGIC; --Press to switch between program and normal mode
+    LED     : OUT STD_LOGIC; --Lights up in program mode
+    
+    RX      : IN  STD_LOGIC; --PC
+    TX      : OUT STD_LOGIC;
+    
+    WiFi_TX : IN  STD_LOGIC; --WiFi
+    WiFi_RX : OUT STD_LOGIC;
+    MAX7219_Interface_CS_O          : OUT STD_LOGIC := '1';
+    MAX7219_Interface_CLK_O         : OUT STD_LOGIC := '0';
+    MAX7219_Interface_DIN_O         : OUT STD_LOGIC := '0';
+
+)
+{
+    
+--GENERATED SIGNALS---------------------------------------------------------------------------------------------
+
+    --WiFi Extension----------------------------------------------------------------------------------------
+
+    --Program_Mode = '0'
+    --PC -> Core <- WiFi
+    --PC <- Core -> WiFi
+    --Program_Mode = '1'
+    --PC ->  ->  -> WiFi
+    --PC <-  <-  <- WiFi
+    
+    SIGNAL Program_Mode : STD_LOGIC := '0'; --Enable Program mode to program ESP8266 without interferrance
+
+    Connections
+    {
+        BTN => BTN_1,
+        LED => LED_1,
+        
+        RX  => UART_TXD,
+        TX  => UART_RXD,
+        
+        WiFi_RX => LS_4,
+        WiFi_TX => LS_7,
+    }
+
+--GENERATED CODE------------------------------------------------------------------------------------------------
+
+    --WiFi Extension----------------------------------------------------------------------------------------
+
+
+    --Press Button to switch between program and normal mode
+    Process () {
+        Thread {
+            While(BTN = '1'){ Wait(100ms); }
+            Program_Mode <= NOT Program_Mode;
+            While(BTN = '0'){ Wait(100ms); }
+        }
+    }
+    
+    --Indicate program mode
+    LED <= Program_Mode;
+    
+    --Sends data from UART Interface to PC and ESP8266
+    TX <= WiFi_TX when Program_Mode = '1' else UART_TX;
+    WiFi_RX <= RX when Program_Mode = '1' else UART_TX;
+    --Receive Data from PC and ESP8266
+    UART_RX <= WiFi_TX AND RX when Program_Mode = '0' else '1';
+    
+
+--GENERATED COMPONENTS------------------------------------------------------------------------------------------
+
+    --WiFi Extension----------------------------------------------------------------------------------------
+
+
+    --UART interface for connection
+    SIGNAL UART_RX            : STD_LOGIC := '1';
+    SIGNAL UART_TX            : STD_LOGIC := '1';
+    SIGNAL UART_TX_Enable     : STD_LOGIC := '0';
+    SIGNAL UART_TX_Busy       : STD_LOGIC := '0';
+    SIGNAL UART_TX_Data       : STD_LOGIC_VECTOR (8-1 DOWNTO 0) := (others => '0');
+    SIGNAL UART_RX_Busy       : STD_LOGIC := '0';
+    SIGNAL UART_RX_Data       : STD_LOGIC_VECTOR (8-1 DOWNTO 0) := (others => '0');
+    SIGNAL UART_RX_Error      : STD_LOGIC := '0';
+    NewComponent UART_Interface
+    (
+        CLK_Frequency => 12000000,
+        Baud_Rate     => 19200,
+
+        RX            => UART_RX,
+        TX            => UART_TX,
+        TX_Enable     => UART_TX_Enable,
+        TX_Busy       => UART_TX_Busy,
+        TX_Data       => UART_TX_Data,
+        RX_Busy       => UART_RX_Busy,
+        RX_Data       => UART_RX_Data,
+        RX_Error      => UART_RX_Error,
+    );
+    
+    CONSTANT Panels                : NATURAL := 4;
+    CONSTANT MaxChars              : NATURAL := 32;
+    
+    SIGNAL LED_Matrix_Text_Text    : STD_LOGIC_VECTOR ((MaxChars*8)-1 downto 0) := s"This could be your text" & s"xxxxxxxxx"; --all bits have to be declared, so I added 9 extra chars (MaxChars-Chars in Text)
+    SIGNAL LED_Matrix_Text_Length  : NATURAL          range 0 to MaxChars := 23;
+    SIGNAL LED_Matrix_Set_Text     : STD_LOGIC;
+    
+    SIGNAL LED_Matrix_Text_Text_Matrix : LED_Matrix_Array ((panels*8)-1 downto 0);
+    SIGNAL LED_Matrix_Text_Text_En     : STD_LOGIC;
+    
+    SIGNAL Reset : STD_LOGIC := '0';
+    
+    NewComponent LED_Matrix_Text
+    (
+        CLK_Frequency => 12000000,
+        Panels        => Panels,
+        MaxChars      => MaxChars,
+        ScrollSpeed   => 5,
+
+        Reset         => Reset,
+        Text          => LED_Matrix_Text_Text,
+        Text_Length   => LED_Matrix_Text_Length,
+        Set_Text      => LED_Matrix_Set_Text,
+        Scroll        => '1',
+        Text_Matrix   => LED_Matrix_Text_Text_Matrix,
+        Text_En       => LED_Matrix_Text_Text_En,
+    );
+    
+    SIGNAL MAX7219_Interface_Panel_Bitmap  : LED_Matrix_Array ((Panels*8)-1 downto 0) := (others => (others => '0'));
+    SIGNAL MAX7219_Interface_Update        : STD_LOGIC := '0';
+    SIGNAL MAX7219_Interface_Brightness    : NATURAL          range 0 to 15 := 5;
+    SIGNAL MAX7219_Interface_Shutdown      : STD_LOGIC := '0';
+    SIGNAL MAX7219_Interface_Config        : STD_LOGIC := '0';
+    SIGNAL MAX7219_Interface_Reset         : STD_LOGIC := '0';
+    NewComponent MAX7219_Interface
+    (
+        CLK_Frequency => 12000000,
+        Panels        => 4,
+        Rotate_seg    => '1',
+        Mirror        => '1',
+
+        Reset         =>MAX7219_Interface_Reset,
+        CS_O          =>MAX7219_Interface_CS_O,
+        CLK_O         =>MAX7219_Interface_CLK_O,
+        DIN_O         =>MAX7219_Interface_DIN_O,
+        Panel_Bitmap  =>MAX7219_Interface_Panel_Bitmap,
+        Update        =>MAX7219_Interface_Update,
+        Brightness    =>MAX7219_Interface_Brightness,
+        Shutdown      =>MAX7219_Interface_Shutdown,
+        Config        =>MAX7219_Interface_Config,
+    );
+    
+    Process ()
+    {
+        MAX7219_Interface_Panel_Bitmap <= LED_Matrix_Text_Text_Matrix;
+        MAX7219_Interface_Update       <= LED_Matrix_Text_Text_En;
+        VARIABLE Setup : BOOLEAN := false;
+        
+        Thread
+        {
+            --Load settings (brightness and shutdown)
+            MAX7219_Interface_Config <= '0'; --Wait on start (not absolutely necessary)
+            Wait(10ms);
+            MAX7219_Interface_Config <= '1'; --Send settings
+            Step{ MAX7219_Interface_Config <= '0'; }
+            Wait(10ms);               --Waiting maybe reduce problems
+            Setup := true;
+            While(true){}
+        }
+        
+        if(Setup)
+        {
+            Thread
+            {
+                NewFunction newString (newString);
+                NewFunction readString (newString,  UART_RX_Data, UART_RX_Busy);
+                             
+                NewFunction stringToVector (newString, LED_Matrix_Text_Text);
+                
+                LED_Matrix_Text_Length <= newString.Length;
+                Step
+                {
+                    LED_Matrix_Set_Text <= '0';
+                }
+                LED_Matrix_Set_Text     <= '1';
+                
+                NewFunction printString (newString, UART_TX_Data, UART_TX_Busy, UART_TX_Enable);
+
+                Wait(100ms);
+            }
+        }
+    }
+}
