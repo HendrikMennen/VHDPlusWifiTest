@@ -41,6 +41,6 @@ set_location_assignment PIN_H1 -to VS[0]
 set_location_assignment PIN_B7 -to VS[1]
 set_location_assignment PIN_L1 -to VS[2]
 set_location_assignment PIN_K13 -to VS_EN
-set_location_assignment PIN_A3 -to MAX7219_Interface_CLK_O
-set_location_assignment PIN_B6 -to MAX7219_Interface_CS_O
-set_location_assignment PIN_B5 -to MAX7219_Interface_DIN_O
+set_location_assignment PIN_K5 -to MAX7219_Interface_CLK_O
+set_location_assignment PIN_J6 -to MAX7219_Interface_CS_O
+set_location_assignment PIN_N6 -to MAX7219_Interface_DIN_O
